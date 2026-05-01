@@ -10,7 +10,7 @@
 :root{--navy:#0f2240;--teal:#1a7a6e;--tl:#22a898;--gold:#c9973a;--cream:#f8f4ee;--warm:#fdfbf8;--bd:#ddd8d0;--tx:#1c1c1c;--mu:#5a5a5a}
 body{font-family:system-ui,-apple-system,sans-serif;background:var(--cream);color:var(--tx);min-height:100vh}
 .hdr{background:var(--navy);color:#fff;padding:20px 18px 16px}
-.hdr-tag{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#e8b96a;margin-bottom:5px}
+.hdr-tag{font-size:15px;letter-spacing:2px;text-transform:uppercase;color:#e8b96a;margin-bottom:5px;font-weight:600;font-family:Georgia,serif}
 .hdr-t{font-family:Georgia,serif;font-size:21px;font-weight:700;margin-bottom:3px}
 .hdr-s{font-size:12px;color:rgba(255,255,255,.5)}
 .prog{background:var(--navy);padding:0 18px 13px}
@@ -159,11 +159,9 @@ input[type=range]{width:100%;accent-color:var(--teal);cursor:pointer}
         <button class="op" onclick="sC('comorbidades','dvp',this)"><span class="ob"><span class="ok">✓</span></span>Doença vascular periférica / problemas de circulação nas pernas</button>
         <button class="op" onclick="sC('comorbidades','irc',this);sI('crb',D.comorbidades.includes('irc'))"><span class="ob"><span class="ok">✓</span></span>Doença renal crônica</button>
         <button class="op" onclick="sC('comorbidades','pulm',this)"><span class="ob"><span class="ok">✓</span></span>Doença pulmonar (asma, enfisema, DPOC, apneia do sono)</button>
-        <button class="op" onclick="sC('comorbidades','outros_comorb',this);sI('outros-comorb-field',D.comorbidades.includes('outros_comorb'))"><span class="ob"><span class="ok">✓</span></span>Outras condições</button>
-        <button class="op" onclick="sX('comorbidades','nenhuma',this,true);sI('outros-comorb-field',false)"><span class="ob"><span class="ok">✓</span></span>Nenhuma das anteriores</button>
-      </div>
-      <div id="outros-comorb-field" style="display:none;margin-top:8px">
-        <input type="text" id="outros_comorb_txt" placeholder="Descreva a condição..." oninput="D.outros_comorb=this.value">
+        <button class="op" onclick="sC('comorbidades','outros_comorb',this)"><span class="ob"><span class="ok">✓</span></span>Outras condições — descreva abaixo</button>
+        <input type="text" id="outros_comorb_txt" placeholder="Ex: hipotireoidismo, lúpus, fibromialgia..." oninput="D.outros_comorb=this.value" style="margin-top:-2px;margin-bottom:4px">
+        <button class="op" onclick="sX('comorbidades','nenhuma',this,true)"><span class="ob"><span class="ok">✓</span></span>Nenhuma das anteriores</button>
       </div>
     </div>
     <div id="crb" style="display:none;margin-bottom:10px">
@@ -300,7 +298,7 @@ const MD={
   antihipertensivos:{l:"💓 Anti-hipertensivos e antiarrítmicos",i:["Losartana (Cozaar, Aradois)","Valsartana (Diovan)","Enalapril (Renitec)","Ramipril (Triatec)","Lisinopril (Zestril)","Atenolol (Ablok)","Metoprolol (Seloken)","Carvedilol (Coreg)","Bisoprolol (Concor)","Anlodipino (Norvasc)","Nifedipina (Adalat)","Hidroclorotiazida (Clortiazida)","Furosemida (Lasix)","Espironolactona (Aldactone)","Digoxina (Digoxin)","Amiodarona (Ancoron)"]},
   anticoag:{l:"🩸 Anticoagulantes e antiplaquetários",i:["AAS / Aspirina (Aspirina, Bufferin)","Clopidogrel (Plavix)","Ticagrelor (Brilinta)","Warfarina (Coumadin, Marevan)","Rivaroxabana (Xarelto)","Apixabana (Eliquis)","Dabigatrana (Pradaxa)","Edoxabana (Lixiana)","Heparina (subcutânea)"]},
   diabetes:{l:"🍬 Diabetes",i:["Metformina (Glifage, Glucoformin)","Glibenclamida (Daonil)","Glimepirida (Amaryl)","Sitagliptina (Januvia)","Vildagliptina (Galvus)","Empagliflozina (Jardiance)","Dapagliflozina (Forxiga)","Canagliflozina (Invokana)","Insulina (qualquer tipo)"]},
-  glp1:{l:"⚖️ Análogos de GLP-1",g:true,w:"Retardam esvaziamento gástrico — pode exigir jejum prolongado",i:["Semaglutida semanal (Ozempic, Wegovy)","Tirzepatida (Mounjaro, Zepbound)","Liraglutida diária (Victoza, Saxenda)","Dulaglutida (Trulicity)","Exenatida (Byetta, Bydureon)"]},
+  glp1:{l:"⚖️ Ozempic / Mounjaro / Saxenda e similares",g:true,w:"Retardam esvaziamento gástrico — pode exigir jejum prolongado",i:["Semaglutida semanal (Ozempic, Wegovy)","Tirzepatida (Mounjaro, Zepbound)","Liraglutida diária (Victoza, Saxenda)","Dulaglutida (Trulicity)","Exenatida (Byetta, Bydureon)"]},
   colesterol:{l:"📊 Colesterol (estatinas e outros)",i:["Sinvastatina (Zocor)","Atorvastatina (Lipitor, Citalor)","Rosuvastatina (Crestor)","Pitavastatina (Livalo)","Ezetimiba (Zetia)","Fenofibrato (Lipanon)"]},
   pulm:{l:"🫁 Asma / DPOC",i:["Salbutamol (Aerolin, Ventolin)","Formoterol (Foradil)","Budesonida inalatória (Pulmicort)","Outros broncodilatadores"]},
   outros:{l:"💊 Outros",i:["Antidepressivos e ansiolíticos","Lítio (Carbolitium)","Levotiroxina (Puran T4, Euthyrox)","Metimazol (Tapazol)","Prednisona / Outros corticoides orais"]},
