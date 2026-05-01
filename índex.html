@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avaliação Pré-Anestésica</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; }
+input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: #ddd; outline: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #1a7a6e; cursor: pointer; }
+input[type=number] { -moz-appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+textarea { resize: vertical; }
+button { cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const WA_NUMBER = “5571985110012”;
+const C = { navy:”#0f2240”,teal:”#1a7a6e”,tealL:”#22a898”,gold:”#c9973a”,cream:”#f8f4ee”,warm:”#fdfbf8”,border:”#ddd8d0”,text:”#1c1c1c”,muted:”#5a5a5a” };
+
+const MEDS = {
+antihipertensivos:{ label:“Anti-hipertensivos e antiarrítmicos”, icon:“💓”, items:[“Losartana (Cozaar, Aradois)”,“Valsartana (Diovan)”,“Enalapril (Renitec)”,“Ramipril (Triatec)”,“Lisinopril (Zestril)”,“Atenolol (Ablok)”,“Metoprolol (Seloken)”,“Carvedilol (Coreg)”,“Bisoprolol (Concor)”,“Anlodipino (Norvasc)”,“Nifedipina (Adalat)”,“Hidroclorotiazida (Clortiazida)”,“Furosemida (Lasix)”,“Espironolactona (Aldactone)”,“Digoxina (Digoxin)”,“Amiodarona (Ancoron)”] },
+anticoag:{ label:“Anticoagulantes e antiplaquetários”, icon:“🩸”, items:[“AAS / Aspirina (Aspirina, Bufferin)”,“Clopidogrel (Plavix)”,“Ticagrelor (Brilinta)”,“Warfarina (Coumadin, Marevan)”,“Rivaroxabana (Xarelto)”,“Apixabana (Eliquis)”,“Dabigatrana (Pradaxa)”,“Edoxabana (Lixiana)”,“Heparina (subcutânea)”] },
+diabetes:{ label:“Diabetes”, icon:“🍬”, items:[“Metformina (Glifage, Glucoformin)”,“Glibenclamida (Daonil)”,“Glimepirida (Amaryl)”,“Sitagliptina (Januvia)”,“Vildagliptina (Galvus)”,“Empagliflozina (Jardiance)”,“Dapagliflozina (Forxiga)”,“Canagliflozina (Invokana)”,“Insulina (qualquer tipo)”] },
+glp1:{ label:“Análogos de GLP-1”, icon:“⚖️”, alert:“Retardam esvaziamento gástrico — pode exigir jejum prolongado”, items:[“Semaglutida semanal (Ozempic, Wegovy)”,“Tirzepatida (Mounjaro, Zepbound)”,“Liraglutida diária (Victoza, Saxenda)”,“Dulaglutida (Trulicity)”,“Exenatida (Byetta, Bydureon)”] },
+colesterol:{ label:“Colesterol (estatinas e outros)”, icon:“📊”, items:[“Sinvastatina (Zocor)”,“Atorvastatina (Lipitor, Citalor)”,“Rosuvastatina (Crestor)”,“Pitavastatina (Livalo)”,“Ezetimiba (Zetia)”,“Fenofibrato (Lipanon)”] },
+pulm:{ label:“Asma / DPOC”, icon:“🫁”, items:[“Salbutamol (Aerolin, Ventolin)”,“Formoterol (Foradil)”,“Budesonida inalatória (Pulmicort)”,“Outros broncodilatadores”] },
+outros:{ label:“Outros”, icon:“💊”, items:[“Antidepressivos e ansiolíticos”,“Lítio (Carbolitium)”,“Levotiroxina (Puran T4, Euthyrox)”,“Metimazol (Tapazol)”,“Prednisona / Outros corticoides orais”,“Implantes hormonais (gestrinona, testosterona, oxandrolona, etc.)”] },
+fito:{ label:“Fitoterápicos e suplementos relevantes”, icon:“🌿”, items:[“Ginkgo biloba”,“Ômega-3 (alta dose)”,“Valeriana”,“Erva de São João (Hypericum)”,“Alho em cápsula (alta dose)”,“Gengibre em cápsula”] },
+};
+
+const COMORBIDADES = [
+{value:“has”,label:“Hipertensão arterial”},{value:“dm”,label:“Diabetes mellitus”},
+{value:“ic”,label:“Insuficiência cardíaca”},{value:“dac”,label:“Doença coronariana / infarto do miocárdio prévio / angina”},
+{value:“avc”,label:“AVC (derrame cerebral) / Ataque isquêmico transitório”},{value:“fa”,label:“Fibrilação atrial (FA)”},
+{value:“arritmia”,label:“Outras arritmias cardíacas”},{value:“dvp”,label:“Doença vascular periférica / problemas de circulação nas pernas”},
+{value:“irc”,label:“Doença renal crônica”},{value:“pulm”,label:“Doença pulmonar (asma, enfisema, DPOC, apneia do sono)”},
+{value:“nenhuma”,label:“Nenhuma das anteriores”},
+];
+
+const PROB_ANEST = [
+{value:“nao”,label:“Não”},{value:“nunca”,label:“Nunca fiz cirurgia”},
+{value:“nvpo”,label:“Náuseas e vômitos”},{value:“intubacao”,label:“Dificuldade de intubação”},
+{value:“resp”,label:“Problemas respiratórios”},{value:“consciencia”,label:“Consciência intraoperatória”},
+{value:“hm”,label:“Hipertermia Maligna (ou história familiar)”},{value:“outros_anest”,label:“Outros”},
+];
+
+const INIT = {nome:””,nascimento:””,peso:””,altura:1.50,procedimento:””,sexo:””,alergia:””,alergia_qual:””,latex:””,comorbidades:[],creatinina:””,prob_anest:[],mets:””,saude_geral:””,exausto:””,emagrecimento:””,velocidade:””,atividade:””,cinetose:””,fumante:””,meds_nenhum:false,meds:[],med_outros:””,obs:””,data_procedimento:””};
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function getAge(dob) {
+if (!dob||dob.length<10) return null;
+const [d,m,y]=dob.split(”/”).map(Number);
+if (!d||!m||!y||y<1900) return null;
+const t=new Date(); let age=t.getFullYear()-y;
+if (t.getMonth()+1<m||(t.getMonth()+1===m&&t.getDate()<d)) age–;
+return age>=0&&age<130?age:null;
+}
+function calcBMI(p,a){ return p&&a?(Number(p)/Math.pow(Number(a),2)).toFixed(1):null; }
+function maskDate(v){ let s=v.replace(/\D/g,””); if(s.length>=3)s=s.slice(0,2)+”/”+s.slice(2); if(s.length>=6)s=s.slice(0,5)+”/”+s.slice(5,9); return s; }
+
+// ─── SCORES ───────────────────────────────────────────────────────────────────
+function calcScores(data) {
+const age=getAge(data.nascimento), com=data.comorbidades||[], meds=data.meds||[], prob=data.prob_anest||[];
+let apfel=0;
+if(data.sexo===“F”) apfel++;
+if(data.fumante===“nao”) apfel++;
+if(prob.includes(“nvpo”)||data.cinetose===“sim”) apfel++;
+let rcri=0;
+if(com.includes(“ic”)) rcri++; if(com.includes(“dac”)) rcri++; if(com.includes(“avc”)) rcri++;
+if(data.creatinina===“alta”) rcri++; if(meds.includes(“Insulina (qualquer tipo)”)) rcri++;
+let frail=null;
+if(age&&age>=65){ frail=0; if(data.exausto===“sim”)frail++; if(data.emagrecimento===“sim”)frail++; if(data.velocidade===“sim”)frail++; if(data.atividade===“nao”)frail++; if(com.filter(c=>c!==“nenhuma”).length>=5)frail++; }
+let cha=null;
+if(com.includes(“fa”)){ cha=0; if(com.includes(“ic”))cha++; if(com.includes(“has”))cha++; if(age&&age>=75)cha+=2; else if(age&&age>=65)cha++; if(com.includes(“dm”))cha++; if(com.includes(“avc”))cha+=2; if(com.includes(“dac”)||com.includes(“dvp”))cha++; if(data.sexo===“F”)cha++; }
+const nHAS=meds.filter(m=>MEDS.antihipertensivos.items.includes(m)).length;
+const nDM=meds.filter(m=>MEDS.diabetes.items.includes(m)).length;
+const temGLP1=meds.some(m=>MEDS.glp1.items.includes(m));
+const temAnticoag=meds.some(m=>MEDS.anticoag.items.includes(m));
+const temImplante=meds.includes(“Implantes hormonais (gestrinona, testosterona, oxandrolona, etc.)”);
+let nivel=“verde”; const motivos=[];
+const addR=(t)=>{nivel=“vermelho”;motivos.push({cor:“r”,texto:t});};
+const addA=(t)=>{if(nivel===“verde”)nivel=“amarelo”;motivos.push({cor:“a”,texto:t});};
+if(rcri>=3) addR(“RCRI ≥ 3 — alto risco cardíaco perioperatório”);
+if(frail!==null&&frail>=3) addR(“Fragilidade significativa (≥ 3 critérios FRAIL)”);
+if(cha!==null&&cha>=4) addR(“CHA₂DS₂-VASc ≥ 4 em paciente com FA”);
+if(prob.some(p=>![“nao”,“nunca”].includes(p))) addA(“Histórico de intercorrência em anestesia prévia”);
+if(temAnticoag) addA(“Uso de anticoagulante ou antiplaquetário — orientar sobre suspensão pré-operatória”);
+if(rcri===2) addA(“RCRI = 2 — risco cardiovascular intermediário”);
+if(frail!==null&&frail===2) addA(“Pré-fragilidade identificada (2 critérios FRAIL)”);
+if(data.mets===“nao”) addA(“Capacidade funcional muito limitada (< 4 METs)”);
+if(temGLP1) addA(“Uso de análogo GLP-1 — avaliar protocolo de jejum estendido”);
+if(temImplante) addA(“Uso de implante hormonal — avaliar impacto cardiovascular e na coagulação”);
+if(meds.includes(“Insulina (qualquer tipo)”)||nDM>=2) addA(“Uso de insulina ou ≥ 2 antidiabéticos — revisar protocolo de suspensão pré-operatória”);
+if(nHAS>=2) addA(“Uso de ≥ 2 anti-hipertensivos — avaliar necessidade de exames cardiológicos complementares”);
+if(data.latex===“sim”) addA(“Alergia a látex relatada — planejar ambiente livre de látex”);
+return {apfel,rcri,frail,cha,nivel,motivos,age,nHAS,nDM,temGLP1,temAnticoag};
+}
+
+// ─── WHATSAPP MESSAGE (clean, no problematic emojis) ──────────────────────────
+function buildWAMsg(data,scores){
+const {apfel,rcri,frail,cha,nivel,motivos,age}=scores;
+const bmi=calcBMI(data.peso,data.altura);
+const comList=(data.comorbidades||[]).filter(c=>c!==“nenhuma”).map(c=>COMORBIDADES.find(x=>x.value===c)?.label).filter(Boolean);
+const probList=(data.prob_anest||[]).map(p=>PROB_ANEST.find(x=>x.value===p)?.label).filter(Boolean);
+const nivelTxt=nivel===“verde”?“VERDE - Avaliacao no dia”:nivel===“amarelo”?“AMARELO - Recomenda-se contato previo”:“VERMELHO - Consulta presencial recomendada”;
+const S=”––––––––––”;
+const lines=[
+`*AVALIACAO PRE-ANESTESICA*`,
+`${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`,
+S,`*TRIAGEM: ${nivelTxt}*`,S,
+`*IDENTIFICACAO*`,
+`Nome: ${data.nome||"nao informado"}`,
+`Nascimento: ${data.nascimento||"-"}${age?` (${age} anos)`:""}`,
+`Sexo: ${data.sexo==="M"?"Masculino":data.sexo==="F"?"Feminino":"-"}`,
+`Peso: ${data.peso?data.peso+" kg":"-"} | Altura: ${data.altura?data.altura.toFixed(2)+" m":"-"}${bmi?` | IMC: ${bmi}`:""}`,
+`Procedimento: ${data.procedimento||"nao informado"}`,
+data.data_procedimento?`Data prevista: ${data.data_procedimento}`:””,
+S,`*HISTORICO*`,
+`Alergia: ${data.alergia==="sim"?`Sim - ${data.alergia_qual||“nao especificada”}`:"Nao"}`,
+`Latex: ${data.latex==="sim"?"Alergia relatada":data.latex==="nao"?"Sem alergia":"Nao informado"}`,
+`Comorbidades: ${comList.length>0?comList.join(", "):"nenhuma"}`,
+data.creatinina?`Creatinina: ${data.creatinina==="normal"?"Normal (ate 1,2)":data.creatinina==="alta"?"Alterada (acima 1,2 mg/dL)":"Nao sabe"}`:””,
+`Anestesia previa: ${probList.length>0?probList.join(", "):"Nao"}`,
+S,`*CAPACIDADE FISICA*`,
+`METs: ${data.mets==="sim"?"4 METs ou mais":data.mets==="dif"?"Limitacao moderada":data.mets==="nao"?"Menos de 4 METs":"-"}`,
+`Tabagismo: ${data.fumante==="nao"?"Nao fumante":data.fumante==="sim"?"Fumante/ex-fumante":"-"}`,
+`Cinetose: ${data.cinetose==="sim"?"Sim":data.cinetose==="nao"?"Nao":"-"}`,
+frail!==null?`FRAIL: ${frail}/5 - ${frail<=1?"Robusto":frail===2?"Pre-fragil":"Fragil"}`:””,
+S,`*MEDICAMENTOS*`,
+data.meds_nenhum?“Nenhum medicamento em uso regular”:(data.meds||[]).length>0?(data.meds||[]).map(m=>`- ${m}`).join(”\n”)+(data.med_outros?`\n- ${data.med_outros}`:””):“Nenhum selecionado”,
+S,`*ESCORES*`,
+`Apfel: ${apfel}/3 - ${apfel<=1?"Baixo risco":apfel===2?"Risco moderado":"Alto risco"}`,
+`  > Apfel ${apfel}: opioide pos-op dose baixa ou ausente`,
+`  > Apfel ${apfel+1}: opioide pos-op dose plena`,
+`RCRI: ${rcri}/5 - ${rcri===0?"Muito baixo (~0,4%)":rcri===1?"Baixo (~1%)":rcri===2?"Moderado (~2,4%)":"Alto (~5,4%)"}`,
+frail!==null?`FRAIL: ${frail}/5 - ${frail<=1?"Robusto":frail===2?"Pre-fragil":"Fragil"}`:`FRAIL: nao aplicavel (menos de 65 anos)`,
+cha!==null?`CHA2DS2-VASc: ${cha}/9 - ${cha<=1?"Baixo":cha<=3?"Moderado":"Alto"}`:`CHA2DS2-VASc: nao aplicavel (sem FA)`,
+motivos.length>0?`${S}\n*PONTOS DE ATENCAO*\n${motivos.map(m=>`${m.cor===“r”?”[ATENCAO]”:”[-]”} ${m.texto}`).join("\n")}`:””,
+data.obs?`${S}\n*OBSERVACOES*\n${data.obs}`:””,
+S,`_Enviado via formulario de triagem pre-anestesica_`,
+];
+return lines.filter(l=>l!==””).join(”\n”);
+}
+
+// ─── PDF GENERATOR (inline HTML opened in new tab, print-ready) ───────────────
+function openPDF(data,scores){
+const {apfel,rcri,frail,cha,nivel,motivos,age}=scores;
+const bmi=calcBMI(data.peso,data.altura);
+const comList=(data.comorbidades||[]).filter(c=>c!==“nenhuma”).map(c=>COMORBIDADES.find(x=>x.value===c)?.label).filter(Boolean);
+const probList=(data.prob_anest||[]).map(p=>PROB_ANEST.find(x=>x.value===p)?.label).filter(Boolean);
+const hoje=new Date().toLocaleDateString(“pt-BR”);
+const trgColor=nivel===“verde”?”#1e8a5e”:nivel===“amarelo”?”#9a6a00”:”#c0392b”;
+const trgBg=nivel===“verde”?”#e6f8f0”:nivel===“amarelo”?”#fef8ec”:”#fdecea”;
+const trgBorder=nivel===“verde”?”#a8dfc5”:nivel===“amarelo”?”#f0d080”:”#f0b0aa”;
+const trgIcon=nivel===“verde”?“✅”:nivel===“amarelo”?“⚠️”:“🔴”;
+const trgTitulo=nivel===“verde”?“Avaliação no dia do procedimento”:nivel===“amarelo”?“Recomenda-se contato prévio”:“Consulta presencial recomendada”;
+const trgSub=nivel===“verde”?“Perfil de baixo risco. Encaminhar orientações de jejum, exames pré-operatórios e termo de consentimento.”:nivel===“amarelo”?“Pontos de atenção identificados. Sugere-se teleconsulta ou contato telefônico para orientações individualizadas.”:“Fatores de risco significativos identificados. Avaliação presencial antes do procedimento é fortemente recomendada.”;
+
+function scoreBlock(titulo,sub,val,max,label,labelColor,desc,nota){
+return `<div class="score-card"> <div class="score-head"><div class="score-title">${titulo}</div><div class="score-sub">${sub}</div></div> <div class="score-body"> <div class="score-num">${val}<span class="score-max">${typeof val==="number"?`/${max}`:""}</span></div> <div class="score-label" style="color:${labelColor}">${label}</div> <div class="score-desc">${desc}</div> ${nota?`<div class="score-nota">${nota}</div>`:""} </div> </div>`;
+}
+
+const apfelColor=apfel<=1?”#1e8a5e”:apfel===2?”#e67e22”:”#c0392b”;
+const rcriColor=rcri<=1?”#1e8a5e”:rcri===2?”#e67e22”:”#c0392b”;
+const frailColor=frail===null?”#888”:frail<=1?”#1e8a5e”:frail===2?”#e67e22”:”#c0392b”;
+const chaColor=cha===null?”#888”:cha<=1?”#1e8a5e”:cha<=3?”#e67e22”:”#c0392b”;
+
+const alertsHtml=motivos.length>0?motivos.map(m=>` <div class="alert ${m.cor==="r"?"alert-red":"alert-yellow"}"> <span class="alert-icon">${m.cor==="r"?"🔴":"⚠️"}</span> <span>${m.texto}</span> </div>`).join(””):`<div class="alert alert-info"><span class="alert-icon">✅</span><span>Nenhum fator de risco significativo identificado.</span></div>`;
+
+const medsHtml=data.meds_nenhum?”<em>Nenhum medicamento em uso regular</em>”:(data.meds||[]).length>0?[…(data.meds||[]),data.med_outros||””].filter(Boolean).map(m=>`<span class="med-tag">${m}</span>`).join(” “):”<em>Nenhum selecionado</em>”;
+
+const html=`<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pré-Anestésica — ${data.nome||"Paciente"}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Source Sans 3',system-ui,sans-serif;background:#f8f4ee;color:#1c1c1c;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{max-width:760px;margin:0 auto;padding:28px 20px 40px}
+  /* PAGE BREAK */
+  .page-break{page-break-before:always;padding-top:28px}
+
+/* ── PAGE 1: RESUMO ── */
+.p1-header{background:#0f2240;color:white;border-radius:12px;padding:22px 24px 18px;margin-bottom:18px}
+.p1-tag{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#e8b96a;margin-bottom:6px}
+.p1-title{font-family:‘Playfair Display’,serif;font-size:24px;font-weight:700;margin-bottom:3px}
+.p1-sub{font-size:12px;color:rgba(255,255,255,0.5)}
+.triagem-badge{display:flex;align-items:flex-start;gap:14px;padding:14px 18px;border-radius:10px;border:1.5px solid ${trgBorder};background:${trgBg};margin-bottom:18px}
+.triagem-icon{font-size:24px;flex-shrink:0;margin-top:2px}
+.triagem-titulo{font-size:15px;font-weight:700;color:${trgColor}}
+.triagem-sub{font-size:12px;color:${trgColor};opacity:.85;margin-top:3px;line-height:1.5}
+.summary-box{background:#f0f4fa;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;line-height:1.8}
+.summary-box strong{color:#0f2240}
+.section-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0f2240;margin:16px 0 8px;padding-left:10px;border-left:3px solid #c9973a}
+.row{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #ddd8d0;font-size:13px}
+.row-key{color:#5a5a5a;min-width:140px;flex-shrink:0}
+.row-val{color:#1c1c1c;font-weight:500;flex:1}
+.med-tag{display:inline-block;background:#e6f6f3;color:#1a7a6e;border-radius:5px;padding:2px 8px;font-size:11px;margin:2px 3px 2px 0;font-weight:500}
+.footer-note{font-size:10px;color:#aaa;margin-top:20px;padding-top:12px;border-top:1px solid #ddd8d0;line-height:1.6}
+
+/* ── PAGE 2: FLASHCARD ── */
+.fc-header{background:#0f2240;color:white;border-radius:12px 12px 0 0;padding:18px 22px}
+.fc-header-title{font-family:‘Playfair Display’,serif;font-size:20px;font-weight:700}
+.fc-header-sub{font-size:12px;color:rgba(255,255,255,0.5);margin-top:3px}
+.fc-body{background:#fdfbf8;border:1px solid #ddd8d0;border-top:none;border-radius:0 0 12px 12px;padding:20px}
+.scores-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.score-card{border:1.5px solid #ddd8d0;border-radius:10px;overflow:hidden;background:white}
+.score-head{background:#0f2240;padding:9px 13px}
+.score-title{font-size:11px;font-weight:600;color:white;letter-spacing:.3px}
+.score-sub{font-size:10px;color:rgba(255,255,255,.55);margin-top:1px}
+.score-body{padding:13px}
+.score-num{font-family:‘Playfair Display’,serif;font-size:34px;font-weight:700;color:#0f2240;line-height:1}
+.score-max{font-size:14px;color:#aaa}
+.score-label{font-size:13px;font-weight:600;margin:4px 0}
+.score-desc{font-size:12px;color:#5a5a5a;line-height:1.4}
+.score-nota{font-size:11px;color:#0f2240;background:#f0f4fa;border-radius:6px;padding:6px 8px;margin-top:8px;line-height:1.7;white-space:pre-line}
+.alerts-title{font-size:13px;font-weight:600;color:#0f2240;margin-bottom:8px}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:9px 13px;border-radius:8px;margin-bottom:6px;font-size:13px;line-height:1.4}
+.alert-icon{flex-shrink:0}
+.alert-red{background:#fdecea;border:1px solid #f0b0aa;color:#8a1a14}
+.alert-yellow{background:#fef8ec;border:1px solid #f0d080;color:#7a5500}
+.alert-info{background:#e8f4fd;border:1px solid #a8cef0;color:#1a4a7a}
+.fc-patient{background:#f0f4fa;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;line-height:1.8}
+.fc-patient strong{color:#0f2240}
+.red-tag{color:#c0392b;font-weight:600}
+.orange-tag{color:#e67e22;font-weight:600}
+.fc-footer{font-size:10px;color:#aaa;margin-top:16px;padding-top:12px;border-top:1px solid #ddd8d0;line-height:1.6}
+
+/* PRINT BUTTON (hidden on print) */
+.print-btn{display:flex;align-items:center;justify-content:center;gap:10px;background:#1a7a6e;color:white;border:none;border-radius:10px;padding:14px 28px;font-size:15px;font-weight:600;cursor:pointer;width:100%;max-width:340px;margin:0 auto 24px;font-family:inherit}
+.print-hint{text-align:center;font-size:12px;color:#5a5a5a;margin-bottom:24px}
+@media print{.print-btn,.print-hint{display:none!important} body{background:white} .page{padding:16px}}
+</style>
+
+</head>
+<body>
+<div class="page">
+
+  <!-- PRINT BUTTON -->
+
+<button class="print-btn" onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button>
+
+  <p class="print-hint">Após salvar, envie o arquivo pelo WhatsApp para a clínica</p>
+
+  <!-- ══ PÁGINA 1: RESUMO DAS RESPOSTAS ══ -->
+
+  <div class="p1-header">
+    <div class="p1-tag">Anestesia Ambulatorial</div>
+    <div class="p1-title">Avaliação Pré-Anestésica</div>
+    <div class="p1-sub">Resumo das respostas · ${hoje}</div>
+  </div>
+
+  <div class="triagem-badge">
+    <span class="triagem-icon">${trgIcon}</span>
+    <div>
+      <div class="triagem-titulo">${trgTitulo}</div>
+      <div class="triagem-sub">${trgSub}</div>
+    </div>
+  </div>
+
+  <div class="section-label">Identificação</div>
+  <div class="row"><span class="row-key">Nome</span><span class="row-val">${data.nome||"—"}</span></div>
+  <div class="row"><span class="row-key">Nascimento</span><span class="row-val">${data.nascimento||"—"}${age?` (${age} anos)`:""}</span></div>
+  <div class="row"><span class="row-key">Sexo</span><span class="row-val">${data.sexo==="M"?"Masculino":data.sexo==="F"?"Feminino":"—"}</span></div>
+  <div class="row"><span class="row-key">Peso / Altura</span><span class="row-val">${data.peso||"—"} kg / ${data.altura?data.altura.toFixed(2)+" m":"—"}${bmi?` — IMC ${bmi}`:""}</span></div>
+  <div class="row"><span class="row-key">Procedimento</span><span class="row-val">${data.procedimento||"não informado"}${data.data_procedimento?` · ${data.data_procedimento}`:""}</span></div>
+
+  <div class="section-label">Histórico de Saúde</div>
+  <div class="row"><span class="row-key">Alergia med.</span><span class="row-val">${data.alergia==="sim"?`Sim — ${data.alergia_qual||"não especificada"}`:"Não"}</span></div>
+  <div class="row"><span class="row-key">Látex</span><span class="row-val">${data.latex==="sim"?"Alergia a látex":data.latex==="nao"?"Sem alergia":"Não informado"}</span></div>
+  <div class="row"><span class="row-key">Comorbidades</span><span class="row-val">${comList.length>0?comList.join(", "):"nenhuma"}</span></div>
+  ${data.creatinina?`<div class="row"><span class="row-key">Creatinina</span><span class="row-val">${data.creatinina==="normal"?"Normal (≤ 1,2 mg/dL)":data.creatinina==="alta"?"Alterada (> 1,2 mg/dL)":"Não sabe"}</span></div>`:""}
+  <div class="row"><span class="row-key">Anestesia prévia</span><span class="row-val">${probList.length>0?probList.join(", "):"Não"}</span></div>
+
+  <div class="section-label">Capacidade Física</div>
+  <div class="row"><span class="row-key">METs</span><span class="row-val">${data.mets==="sim"?"≥ 4 METs (sem limitação)":data.mets==="dif"?"Limitação moderada":data.mets==="nao"?"< 4 METs (limitação importante)":"—"}</span></div>
+  <div class="row"><span class="row-key">Saúde geral</span><span class="row-val">{{muito_boa:"Muito boa",boa:"Boa",regular:"Regular",ruim:"Ruim"}[data.saude_geral]||"—"}</span></div>
+  <div class="row"><span class="row-key">Tabagismo</span><span class="row-val">${data.fumante==="nao"?"Não fumante":data.fumante==="sim"?"Fumante/ex-fumante":"—"}</span></div>
+  <div class="row"><span class="row-key">Cinetose</span><span class="row-val">${data.cinetose==="sim"?"Sim":data.cinetose==="nao"?"Não":"—"}</span></div>
+  ${age&&age>=65?`
+  <div class="row"><span class="row-key">Fadiga (FRAIL)</span><span class="row-val">${data.exausto==="sim"?"Sim":"Não"}</span></div>
+  <div class="row"><span class="row-key">Perda de peso</span><span class="row-val">${data.emagrecimento==="sim"?"Sim (> 4,5 kg)":"Não"}</span></div>
+  <div class="row"><span class="row-key">Lentidão</span><span class="row-val">${data.velocidade==="sim"?"Sim":"Não"}</span></div>
+  <div class="row"><span class="row-key">Atividade física</span><span class="row-val">${data.atividade==="sim"?"Pratica regularmente":"Não pratica"}</span></div>`:""}
+
+  <div class="section-label">Medicamentos em uso</div>
+  <div style="padding:8px 0;font-size:13px;line-height:1.9">${medsHtml}</div>
+
+${data.obs?`<div class="section-label">Observações</div><div style="font-size:13px;line-height:1.6;padding:6px 0">${data.obs}</div>`:””}
+
+  <div class="footer-note">⚕️ Instrumento auxiliar de triagem pré-anestésica. Não substitui avaliação clínica presencial. Gerado em ${hoje}.</div>
+
+  <!-- ══ PÁGINA 2: FLASHCARD ══ -->
+
+  <div class="page-break">
+    <div class="fc-header">
+      <div class="fc-header-title">Triagem Pré-Anestésica — Escores Clínicos</div>
+      <div class="fc-header-sub">${data.nome||"Paciente"}${data.data_procedimento?` · ${data.data_procedimento}`:""} · ${hoje}</div>
+    </div>
+    <div class="fc-body">
+
+```
+  <div class="triagem-badge">
+    <span class="triagem-icon">${trgIcon}</span>
+    <div>
+      <div class="triagem-titulo">${trgTitulo}</div>
+      <div class="triagem-sub">${trgSub}</div>
+    </div>
+  </div>
+
+  <div class="fc-patient">
+    <strong>${data.nome||"—"}</strong>${age?` · ${age} anos`:""}${data.sexo?` · ${data.sexo==="M"?"Masculino":"Feminino"}`:""}${bmi?` · IMC: ${bmi}`:""} ${data.procedimento?`· <em>${data.procedimento}</em>`:""}
+    ${comList.length>0?`<br><span style="color:#5a5a5a">Comorbidades: ${comList.join(", ")}</span>`:""}
+    ${data.alergia==="sim"?`<br><span class="red-tag">Alergia: ${data.alergia_qual||"não especificada"}</span>`:""}
+    ${data.latex==="sim"?`<br><span class="red-tag">Alergia a látex</span>`:""}
+    ${probList.some(p=>!["Não","Nunca fiz cirurgia"].includes(p))?`<br><span class="orange-tag">Intercorrência anestésica prévia: ${probList.join(", ")}</span>`:""}
+  </div>
+
+  <div class="scores-grid">
+    ${scoreBlock("Risco de Náusea e Vômito Pós-Op","Apfel Score",apfel,3,`${apfel<=1?"Baixo Risco":apfel===2?"Risco Moderado":"Alto Risco"}`,apfelColor,`${apfel<=1?"Baixa probabilidade de NVPO":apfel===2?"Considerar profilaxia":"Profilaxia combinada indicada"}`,`Apfel ${apfel} — opioide pós-op em dose baixa ou ausente\nApfel ${apfel+1} — opioide pós-op em dose plena`)}
+    ${scoreBlock("Risco Cardíaco Perioperatório","RCRI / Lee",rcri,5,`${rcri===0?"Muito Baixo (~0,4%)":rcri===1?"Baixo (~1%)":rcri===2?"Moderado (~2,4%)":"Alto (~5,4%)"}`,rcriColor,"Risco de evento cardíaco maior em cirurgia não cardíaca","")}
+    ${frail!==null?scoreBlock("Avaliação de Fragilidade","FRAIL Scale",frail,5,`${frail<=1?"Robusto":frail===2?"Pré-frágil":"Frágil"}`,frailColor,`${frail<=1?"Sem sinais de fragilidade":frail===2?"Atenção ao risco aumentado":"Risco elevado de complicações"}`,""): scoreBlock("Avaliação de Fragilidade","FRAIL Scale","—",5,"Não aplicável","#888","Paciente abaixo de 65 anos","")}
+    ${cha!==null?scoreBlock("Risco Tromboembólico (FA)","CHA₂DS₂-VASc",cha,9,`${cha===0?"Baixo":cha<=2?"Baixo-Moderado":cha<=3?"Moderado":"Alto"}`,chaColor,`${cha<=1?"Baixo risco tromboembólico":cha<=2?"Considerar anticoagulação":"Anticoagulação geralmente indicada"}`,""): scoreBlock("Risco Tromboembólico","CHA₂DS₂-VASc","—",9,"Não aplicável","#888","Sem fibrilação atrial diagnosticada","")}
+  </div>
+
+  <div class="alerts-title">Pontos de Atenção</div>
+  ${alertsHtml}
+
+  <div class="fc-footer">⚕️ Instrumento auxiliar de triagem. Não substitui a avaliação clínica presencial. Escores calculados com base nas respostas do paciente.</div>
+</div>
+```
+
+  </div>
+
+</div>
+</body>
+</html>`;
+
+// Fix saude_geral template literal issue
+const fixed = html.replace(
+`{{muito_boa:"Muito boa",boa:"Boa",regular:"Regular",ruim:"Ruim"}[data.saude_geral]||"—"}`,
+({muito_boa:“Muito boa”,boa:“Boa”,regular:“Regular”,ruim:“Ruim”})[data.saude_geral]||”—”
+);
+
+const encoded = “data:text/html;charset=utf-8,” + encodeURIComponent(fixed);
+const a = document.createElement(“a”);
+a.href = encoded;
+a.download = `pre-anestesica-${(data.nome||"paciente").replace(/\s+/g,"-")}.html`;
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+}
+
+// ─── UI COMPONENTS ────────────────────────────────────────────────────────────
+function Radio({options,value,onChange,inline=false}){
+return <div style={{display:“flex”,flexDirection:inline?“row”:“column”,flexWrap:“wrap”,gap:8}}>
+{options.map(o=>(
+<button key={o.value} type=“button” onClick={()=>onChange(o.value)} style={{display:“flex”,alignItems:“center”,gap:10,padding:“10px 14px”,borderRadius:8,cursor:“pointer”,border:value===o.value?`2px solid ${C.teal}`:`1.5px solid ${C.border}`,background:value===o.value?”#e6f6f3”:“white”,color:value===o.value?C.teal:C.text,fontFamily:“inherit”,fontSize:14,fontWeight:value===o.value?600:400,textAlign:“left”}}>
+<span style={{width:16,height:16,borderRadius:“50%”,flexShrink:0,border:value===o.value?`5px solid ${C.teal}`:“2px solid #ccc”,background:“white”}}/>
+{o.label}
+</button>
+))}
+
+  </div>;
+}
+
+function Checks({options,values,onChange}){
+const toggle=(val)=>{ if(val===“nenhuma”){onChange([“nenhuma”]);return;} const f=values.filter(v=>v!==“nenhuma”); onChange(f.includes(val)?f.filter(v=>v!==val):[…f,val]); };
+return <div style={{display:“flex”,flexDirection:“column”,gap:8}}>
+{options.map(o=>{ const on=values.includes(o.value); return(
+<button key={o.value} type=“button” onClick={()=>toggle(o.value)} style={{display:“flex”,alignItems:“center”,gap:10,padding:“10px 14px”,borderRadius:8,cursor:“pointer”,border:on?`2px solid ${C.teal}`:`1.5px solid ${C.border}`,background:on?”#e6f6f3”:“white”,color:on?C.teal:C.text,fontFamily:“inherit”,fontSize:14,fontWeight:on?600:400,textAlign:“left”}}>
+<span style={{width:16,height:16,borderRadius:4,flexShrink:0,border:on?“none”:“2px solid #ccc”,background:on?C.teal:“white”,display:“flex”,alignItems:“center”,justifyContent:“center”}}>{on&&<span style={{color:“white”,fontSize:10,fontWeight:700}}>✓</span>}</span>
+{o.label}
+</button>);
+})}
+
+  </div>;
+}
+
+function MedCat({catKey,cat,selected,onToggle}){
+const [open,setOpen]=useState(false);
+const count=cat.items.filter(i=>selected.includes(i)).length;
+return <div style={{border:catKey===“glp1”?“1.5px solid #f0d060”:`1.5px solid ${C.border}`,borderRadius:10,marginBottom:8,overflow:“hidden”}}>
+<button type=“button” onClick={()=>setOpen(o=>!o)} style={{width:“100%”,display:“flex”,justifyContent:“space-between”,alignItems:“center”,padding:“12px 16px”,background:catKey===“glp1”?”#fffbf0”:“white”,border:“none”,cursor:“pointer”,fontFamily:“inherit”,fontSize:14,fontWeight:500}}>
+<span>{cat.icon} {cat.label} {count>0&&<span style={{background:C.teal,color:“white”,borderRadius:10,padding:“1px 8px”,fontSize:11,marginLeft:6}}>{count}</span>}</span>
+<span style={{fontSize:11,color:”#aaa”,transform:open?“rotate(180deg)”:“none”,transition:“transform 0.2s”,display:“inline-block”}}>▼</span>
+</button>
+{open&&<div style={{padding:“10px 14px 14px”,borderTop:`1px solid ${C.border}`}}>
+{cat.alert&&<div style={{background:”#fff8e6”,border:“1px solid #f0d080”,borderRadius:6,padding:“8px 10px”,fontSize:12,color:”#8a5500”,marginBottom:10}}>⚠️ {cat.alert}</div>}
+<div style={{display:“grid”,gridTemplateColumns:“repeat(auto-fill,minmax(155px,1fr))”,gap:6}}>
+{cat.items.map(item=>{ const on=selected.includes(item); const name=item.includes(”(”)?item.split(”(”)[0].trim():item; const brand=item.match(/(([^)]+))/)?.[1];
+return <button key={item} type=“button” onClick={()=>onToggle(item)} style={{display:“flex”,alignItems:“flex-start”,gap:8,padding:“8px 10px”,borderRadius:8,cursor:“pointer”,border:on?`2px solid ${C.teal}`:`1.5px solid ${C.border}`,background:on?”#e6f6f3”:“white”,fontFamily:“inherit”,textAlign:“left”}}>
+<span style={{width:14,height:14,borderRadius:3,flexShrink:0,marginTop:2,border:on?“none”:“2px solid #ccc”,background:on?C.teal:“white”,display:“flex”,alignItems:“center”,justifyContent:“center”}}>{on&&<span style={{color:“white”,fontSize:9,fontWeight:700}}>✓</span>}</span>
+<span><span style={{fontSize:13,fontWeight:500,color:on?C.teal:C.text,display:“block”}}>{name}</span>{brand&&<span style={{fontSize:11,color:C.muted}}>{brand}</span>}</span>
+</button>;
+})}
+</div>
+</div>}
+
+  </div>;
+}
+
+function Field({label,hint,children}){ return <div style={{marginBottom:18}}><label style={{display:“block”,fontSize:14,fontWeight:500,marginBottom:hint?4:6,lineHeight:1.4}}>{label}{hint&&<span style={{display:“block”,fontSize:12,fontWeight:300,color:C.muted,marginTop:2}}>{hint}</span>}</label>{children}</div>; }
+function Sub({children}){ return <div style={{fontSize:13,fontWeight:600,color:C.navy,marginBottom:12,marginTop:4,paddingLeft:10,borderLeft:`3px solid ${C.gold}`}}>{children}</div>; }
+function Card({icon,title,subtitle,children}){ return <div style={{background:C.warm,borderRadius:12,border:`1px solid ${C.border}`,marginBottom:20,overflow:“hidden”}}><div style={{padding:“16px 22px 13px”,borderBottom:`1px solid ${C.border}`,display:“flex”,alignItems:“center”,gap:12}}><div style={{width:36,height:36,borderRadius:8,background:C.navy,display:“flex”,alignItems:“center”,justifyContent:“center”,fontSize:17,flexShrink:0}}>{icon}</div><div><div style={{fontFamily:“Georgia,serif”,fontSize:17,fontWeight:600}}>{title}</div>{subtitle&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{subtitle}</div>}</div></div><div style={{padding:“18px 22px”}}>{children}</div></div>; }
+function BtnRow({children}){ return <div style={{display:“flex”,gap:10,justifyContent:“flex-end”,marginTop:22,flexWrap:“wrap”}}>{children}</div>; }
+function Btn({onClick,variant=“primary”,children}){ const s={primary:{background:C.navy,color:“white”,border:“none”},secondary:{background:“transparent”,color:C.navy,border:`1.5px solid ${C.navy}`},teal:{background:C.teal,color:“white”,border:“none”},wa:{background:”#25d366”,color:“white”,border:“none”}}; return <button type=“button” onClick={onClick} style={{padding:“12px 22px”,borderRadius:8,fontFamily:“inherit”,fontSize:14,fontWeight:600,cursor:“pointer”,…s[variant]}}>{children}</button>; }
+function TxtIn({value,onChange,placeholder,type=“text”}){ return <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{width:“100%”,padding:“10px 13px”,border:`1.5px solid ${C.border}`,borderRadius:8,fontFamily:“inherit”,fontSize:14,background:“white”,boxSizing:“border-box”}}/>; }
+function HeightSlider({value,onChange}){ return <div><div style={{textAlign:“center”,fontSize:30,fontWeight:700,color:C.navy,fontFamily:“Georgia,serif”,marginBottom:8}}>{(value||1.50).toFixed(2)} <span style={{fontSize:16,fontWeight:400,color:C.muted}}>m</span></div><input type=“range” min={0.80} max={2.20} step={0.01} value={value||1.50} onChange={e=>onChange(parseFloat(e.target.value))} style={{width:“100%”,accentColor:C.teal,cursor:“pointer”}}/><div style={{display:“flex”,justifyContent:“space-between”,fontSize:11,color:C.muted,marginTop:4}}><span>0,80 m</span><span>1,50 m</span><span>2,20 m</span></div></div>; }
+
+// ─── REVIEW ───────────────────────────────────────────────────────────────────
+function RI({label,value}){ if(!value||value===”—”) return null; return <div style={{display:“flex”,gap:10,padding:“7px 0”,borderBottom:`1px solid ${C.border}`,fontSize:13}}><span style={{color:C.muted,minWidth:130,flexShrink:0}}>{label}</span><span style={{color:C.text,fontWeight:500}}>{value}</span></div>; }
+
+function Review({data,onBack,onConfirm}){
+const age=getAge(data.nascimento); const bmi=calcBMI(data.peso,data.altura);
+const comList=(data.comorbidades||[]).filter(c=>c!==“nenhuma”).map(c=>COMORBIDADES.find(x=>x.value===c)?.label).filter(Boolean);
+const probList=(data.prob_anest||[]).map(p=>PROB_ANEST.find(x=>x.value===p)?.label).filter(Boolean);
+return <Card icon="✅" title="Revise suas respostas" subtitle="Confira antes de enviar">
+<div style={{background:”#f0f4fa”,borderRadius:8,padding:“10px 14px”,marginBottom:16,fontSize:13,color:”#1a4a7a”,lineHeight:1.6}}>
+Verifique se tudo está correto. Se precisar corrigir algo, clique em <strong>Voltar e corrigir</strong>.
+</div>
+<Sub>Identificação</Sub>
+<RI label="Nome" value={data.nome}/><RI label=“Nascimento” value={data.nascimento?(data.nascimento+(age?` (${age} anos)`:””)):”—”}/><RI label=“Sexo” value={data.sexo===“M”?“Masculino”:data.sexo===“F”?“Feminino”:”—”}/><RI label=“Peso / Altura” value={data.peso&&data.altura?`${data.peso} kg / ${data.altura.toFixed(2)} m`+(bmi?` (IMC ${bmi})`:””):”—”}/><RI label=“Procedimento” value={data.procedimento||“não informado”}/>
+<div style={{height:14}}/><Sub>Histórico de Saúde</Sub>
+<RI label=“Alergia” value={data.alergia===“sim”?`Sim — ${data.alergia_qual||"não especificada"}`:“Não”}/><RI label=“Látex” value={data.latex===“sim”?“Alergia a látex”:data.latex===“nao”?“Sem alergia”:data.latex===“nao_sei”?“Não sabe”:”—”}/><RI label="Comorbidades" value={comList.length>0?comList.join(”, “):“nenhuma”}/>{data.creatinina&&<RI label=“Creatinina” value={data.creatinina===“normal”?“Normal (≤ 1,2)”:data.creatinina===“alta”?“Alterada (> 1,2 mg/dL)”:“Não sabe”}/>}<RI label="Anestesia prévia" value={probList.length>0?probList.join(”, “):”—”}/>
+<div style={{height:14}}/><Sub>Capacidade Física</Sub>
+<RI label=“Escada/caminhada” value={data.mets===“sim”?“Sem dificuldade”:data.mets===“dif”?“Com dificuldade”:data.mets===“nao”?“Não consegue”:”—”}/><RI label=“Saúde geral” value={{muito_boa:“Muito boa”,boa:“Boa”,regular:“Regular”,ruim:“Ruim”}[data.saude_geral]||”—”}/><RI label=“Cinetose” value={data.cinetose===“sim”?“Sim”:data.cinetose===“nao”?“Não”:”—”}/><RI label=“Tabagismo” value={data.fumante===“nao”?“Não fumante”:data.fumante===“sim”?“Fumante/ex-fumante”:”—”}/>
+{age&&age>=65&&<><RI label=“Fadiga” value={data.exausto===“sim”?“Sim”:“Não”}/><RI label=“Perda de peso” value={data.emagrecimento===“sim”?“Sim (> 4,5 kg)”:“Não”}/><RI label=“Lentidão/limitação” value={data.velocidade===“sim”?“Sim”:“Não”}/><RI label=“Atividade física” value={data.atividade===“sim”?“Pratica”:“Não pratica”}/></>}
+<div style={{height:14}}/><Sub>Medicamentos</Sub>
+{data.meds_nenhum?<div style={{fontSize:13,color:C.muted,padding:“6px 0”}}>Nenhum medicamento em uso regular</div>:(data.meds||[]).length===0&&!data.med_outros?<div style={{fontSize:13,color:C.muted,padding:“6px 0”}}>Nenhum selecionado</div>:<div style={{fontSize:13,lineHeight:1.9}}>{(data.meds||[]).map(m=><div key={m}>• {m}</div>)}{data.med_outros&&<div>• {data.med_outros}</div>}</div>}
+{data.obs&&<><div style={{height:14}}/><Sub>Observações</Sub><div style={{fontSize:13,lineHeight:1.6}}>{data.obs}</div></>}
+<BtnRow><Btn variant="secondary" onClick={onBack}>← Voltar e corrigir</Btn><Btn variant="wa" onClick={onConfirm}>📲 Confirmar e enviar</Btn></BtnRow>
+</Card>;
+}
+
+// ─── PATIENT SENT SCREEN ──────────────────────────────────────────────────────
+function PatientSent({data,onOpenPDF}){
+const nome=data.nome?data.nome.split(” “)[0]:””;
+return <Card icon="✅" title="Formulário enviado!" subtitle="Suas respostas foram encaminhadas com sucesso">
+<div style={{textAlign:“center”,padding:“8px 0 16px”}}>
+<div style={{fontSize:44,marginBottom:10}}>🎉</div>
+<div style={{fontSize:16,fontWeight:600,color:C.navy,marginBottom:6}}>Obrigado{nome?`, ${nome}`:””}!</div>
+<div style={{fontSize:14,color:C.muted,lineHeight:1.7,marginBottom:24}}>Suas respostas foram enviadas para a equipe médica.<br/>Você receberá as orientações em breve.</div>
+</div>
+
+```
+<div style={{background:"#f0f4fa",border:`1.5px solid #a8c4e8`,borderRadius:12,padding:16,marginBottom:12}}>
+  <div style={{fontSize:13,fontWeight:600,color:C.navy,marginBottom:10}}>Deseja também enviar o arquivo da ficha?</div>
+  <div style={{fontSize:13,color:C.muted,lineHeight:1.8,marginBottom:14}}>
+    Toque no botão abaixo para abrir a ficha completa e depois compartilhe pelo WhatsApp com a clínica.
+  </div>
+
+  <button type="button" onClick={onOpenPDF} style={{width:"100%",background:C.teal,color:"white",border:"none",borderRadius:10,padding:"14px",fontFamily:"inherit",fontSize:15,fontWeight:600,cursor:"pointer",marginBottom:10}}>
+    📄 Abrir ficha para enviar
+  </button>
+
+  <style>{`@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}`}</style>
+  <div style={{textAlign:"center",marginTop:8}}>
+    <div style={{fontSize:22,animation:"bob 1.2s ease-in-out infinite",display:"inline-block"}}>👇</div>
+    <div style={{fontSize:12,color:"#1a4a7a",marginTop:4,lineHeight:1.5}}>
+      Após abrir a ficha, toque em <strong>Compartilhar</strong> (iPhone)<br/>
+      ou <strong>Salvar / Baixar</strong> (Android) e envie pelo WhatsApp
+    </div>
+  </div>
+</div>
+
+<div style={{background:"#f8f4ee",border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px",marginTop:8}}>
+  <div style={{fontSize:12,color:C.muted,lineHeight:1.7}}>
+    <strong style={{color:C.navy}}>📱 iPhone:</strong> Toque em <strong>⎋</strong> na barra do Safari → escolha WhatsApp<br/>
+    <strong style={{color:C.navy}}>🤖 Android:</strong> Toque em salvar PDF → abra o WhatsApp → envie o arquivo
+  </div>
+</div>
+```
+
+</Card>;
+}
+
+// ─── DOCTOR RESULTS ───────────────────────────────────────────────────────────
+function DocResults({data,onReset}){
+const sc=calcScores(data);
+const {apfel,rcri,frail,cha,nivel,motivos,age}=sc;
+const bmi=calcBMI(data.peso,data.altura);
+const comList=(data.comorbidades||[]).filter(c=>c!==“nenhuma”).map(c=>COMORBIDADES.find(x=>x.value===c)?.label).filter(Boolean);
+const probList=(data.prob_anest||[]).map(p=>PROB_ANEST.find(x=>x.value===p)?.label).filter(Boolean);
+const TRG={verde:{icon:“✅”,titulo:“Avaliação no dia do procedimento”,sub:“Perfil de baixo risco. Encaminhar orientações gerais de jejum, exames pré-operatórios e termo de consentimento.”,bg:”#e6f8f0”,border:”#a8dfc5”,color:”#1e8a5e”},amarelo:{icon:“⚠️”,titulo:“Recomenda-se contato prévio ao procedimento”,sub:“Pontos de atenção identificados. Sugere-se teleconsulta ou contato telefônico para orientações individualizadas.”,bg:”#fef8ec”,border:”#f0d080”,color:”#9a6a00”},vermelho:{icon:“🔴”,titulo:“Consulta presencial recomendada”,sub:“Fatores de risco significativos identificados. Avaliação presencial antes do procedimento é fortemente recomendada.”,bg:”#fdecea”,border:”#f0b0aa”,color:”#c0392b”}}[nivel];
+
+function SC({titulo,sub,val,max,risco,label,desc,nota}){
+const cor=risco===“low”?”#1e8a5e”:risco===“med”?”#e67e22”:”#c0392b”;
+return <div style={{border:`1.5px solid ${C.border}`,borderRadius:10,overflow:“hidden”,background:“white”}}>
+<div style={{background:C.navy,color:“white”,padding:“9px 13px”}}><div style={{fontSize:11,fontWeight:600,letterSpacing:.3}}>{titulo}</div>{sub&&<div style={{fontSize:10,opacity:.6,marginTop:1}}>{sub}</div>}</div>
+<div style={{padding:13}}>
+<div style={{fontFamily:“Georgia,serif”,fontSize:32,fontWeight:700,color:C.navy,lineHeight:1}}>{val}{typeof val===“number”&&<span style={{fontSize:13,color:”#aaa”}}>/{max}</span>}</div>
+<div style={{fontSize:13,fontWeight:600,color:cor,margin:“4px 0”}}>{label}</div>
+<div style={{fontSize:12,color:C.muted,lineHeight:1.4}}>{desc}</div>
+{nota&&<div style={{fontSize:11,color:C.navy,background:”#f0f4fa”,borderRadius:6,padding:“6px 8px”,marginTop:8,lineHeight:1.7,whiteSpace:“pre-line”}}>{nota}</div>}
+</div>
+</div>;
+}
+
+return <div>
+<div style={{background:C.navy,color:“white”,borderRadius:“12px 12px 0 0”,padding:“18px 22px”}}>
+<div style={{fontFamily:“Georgia,serif”,fontSize:20,fontWeight:700}}>Resultado da Triagem Pré-Anestésica</div>
+<div style={{fontSize:12,color:“rgba(255,255,255,0.5)”,marginTop:3}}>{data.nome||“Paciente”}{data.data_procedimento?` · ${data.data_procedimento}`:””} · {new Date().toLocaleDateString(“pt-BR”)}</div>
+</div>
+<div style={{background:C.warm,border:`1px solid ${C.border}`,borderTop:“none”,borderRadius:“0 0 12px 12px”,padding:22}}>
+<div style={{display:“flex”,alignItems:“flex-start”,gap:12,padding:“13px 16px”,borderRadius:10,border:`1.5px solid ${TRG.border}`,background:TRG.bg,marginBottom:20}}>
+<span style={{fontSize:22}}>{TRG.icon}</span>
+<div><div style={{fontWeight:700,fontSize:15,color:TRG.color}}>{TRG.titulo}</div><div style={{fontSize:12,color:TRG.color,opacity:.85,marginTop:3,lineHeight:1.5}}>{TRG.sub}</div></div>
+</div>
+<div style={{background:”#f0f4fa”,borderRadius:8,padding:“12px 16px”,marginBottom:20,fontSize:13,lineHeight:1.8}}>
+<strong style={{color:C.navy}}>{data.nome||”—”}</strong>{age?` · ${age} anos`:””}{data.sexo?` · ${data.sexo==="M"?"Masculino":"Feminino"}`:””}{bmi?` · IMC: ${bmi}`:””}{data.procedimento?<span> · <em>{data.procedimento}</em></span>:””}
+{comList.length>0&&<><br/><span style={{color:C.muted}}>Comorbidades: {comList.join(”, “)}</span></>}
+{data.alergia===“sim”&&<><br/><span style={{color:”#c0392b”}}>Alergia: {data.alergia_qual||“não especificada”}</span></>}
+{data.latex===“sim”&&<><br/><span style={{color:”#c0392b”}}>Alergia a látex</span></>}
+{probList.some(p=>![“Não”,“Nunca fiz cirurgia”].includes(p))&&<><br/><span style={{color:”#e67e22”}}>Intercorrência prévia: {probList.join(”, “)}</span></>}
+</div>
+<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:12,marginBottom:20}}>
+<SC titulo=“Risco de Náusea e Vômito Pós-Op” sub=“Apfel Score” val={apfel} max={3} risco={apfel<=1?“low”:apfel===2?“med”:“high”} label={apfel<=1?“Baixo Risco”:apfel===2?“Risco Moderado”:“Alto Risco”} desc={apfel<=1?“Baixa probabilidade de NVPO”:apfel===2?“Considerar profilaxia”:“Profilaxia combinada indicada”} nota={`Apfel ${apfel} — opioide pós-op em dose baixa ou ausente\nApfel ${apfel+1} — opioide pós-op em dose plena`}/>
+<SC titulo=“Risco Cardíaco Perioperatório” sub=“RCRI / Lee” val={rcri} max={5} risco={rcri<=1?“low”:rcri===2?“med”:“high”} label={rcri===0?“Muito Baixo (~0,4%)”:rcri===1?“Baixo (~1%)”:rcri===2?“Moderado (~2,4%)”:“Alto (~5,4%)”} desc=“Risco de evento cardíaco maior em cirurgia não cardíaca” nota=””/>
+{frail!==null?<SC titulo=“Avaliação de Fragilidade” sub=“FRAIL Scale” val={frail} max={5} risco={frail<=1?“low”:frail===2?“med”:“high”} label={frail<=1?“Robusto”:frail===2?“Pré-frágil”:“Frágil”} desc={frail<=1?“Sem sinais de fragilidade”:frail===2?“Atenção ao risco aumentado”:“Risco elevado de complicações”} nota=””/>:<SC titulo="Avaliação de Fragilidade" sub="FRAIL Scale" val="—" max={5} risco="low" label="Não aplicável" desc="Paciente abaixo de 65 anos" nota=""/>}
+{cha!==null?<SC titulo=“Risco Tromboembólico (FA)” sub=“CHA₂DS₂-VASc” val={cha} max={9} risco={cha<=1?“low”:cha<=3?“med”:“high”} label={cha===0?“Baixo”:cha<=2?“Baixo-Moderado”:cha<=3?“Moderado”:“Alto”} desc={cha<=1?“Baixo risco tromboembólico”:cha<=2?“Considerar anticoagulação”:“Anticoagulação geralmente indicada”} nota=””/>:<SC titulo="Risco Tromboembólico" sub="CHA₂DS₂-VASc" val="—" max={9} risco="low" label="Não aplicável" desc="Sem fibrilação atrial diagnosticada" nota=""/>}
+</div>
+{motivos.length>0&&<div style={{marginBottom:20}}>
+<div style={{fontSize:13,fontWeight:600,color:C.navy,marginBottom:8}}>Pontos de Atenção</div>
+{motivos.map((m,i)=><div key={i} style={{display:“flex”,gap:10,alignItems:“flex-start”,padding:“9px 13px”,borderRadius:8,marginBottom:6,fontSize:13,lineHeight:1.4,background:m.cor===“r”?”#fdecea”:”#fef8ec”,border:`1px solid ${m.cor==="r"?"#f0b0aa":"#f0d080"}`,color:m.cor===“r”?”#8a1a14”:”#7a5500”}}><span style={{flexShrink:0}}>{m.cor===“r”?“🔴”:“⚠️”}</span><span>{m.texto}</span></div>)}
+</div>}
+<div style={{borderTop:`1px solid ${C.border}`,paddingTop:14,marginBottom:14}}>
+<div style={{fontSize:13,fontWeight:600,color:C.navy,marginBottom:8}}>Registro de Respostas</div>
+<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:“4px 20px”,fontSize:12}}>
+{[[“Nome”,data.nome],[“Nascimento”,data.nascimento],[“Sexo”,data.sexo===“M”?“Masculino”:“Feminino”],[“Peso”,data.peso?data.peso+” kg”:”—”],[“Altura”,data.altura?data.altura.toFixed(2)+” m”:”—”],[“IMC”,bmi||”—”],[“Procedimento”,data.procedimento],[“Data prevista”,data.data_procedimento],[“Alergia med.”,data.alergia===“sim”?`Sim — ${data.alergia_qual||"n/e"}`:“Não”],[“Látex”,data.latex===“sim”?“Sim”:data.latex===“nao”?“Não”:”—”],[“Creatinina”,data.creatinina?(data.creatinina===“normal”?“Normal”:data.creatinina===“alta”?“Alterada”:“N/S”):”—”],[“METs”,data.mets===“sim”?“≥ 4”:data.mets===“dif”?“Limitado”:data.mets===“nao”?”< 4”:”—”],[“Saúde geral”,{muito_boa:“Muito boa”,boa:“Boa”,regular:“Regular”,ruim:“Ruim”}[data.saude_geral]||”—”],[“Tabagismo”,data.fumante===“nao”?“Não fumante”:data.fumante===“sim”?“Fumante/ex”:”—”],[“Cinetose”,data.cinetose===“sim”?“Sim”:data.cinetose===“nao”?“Não”:”—”],…(age>=65?[[“Fadiga”,data.exausto===“sim”?“Sim”:“Não”],[“Emagrecimento”,data.emagrecimento===“sim”?“Sim”:“Não”],[“Lentidão”,data.velocidade===“sim”?“Sim”:“Não”],[“Ativ. física”,data.atividade===“sim”?“Sim”:“Não”]]:[])].map(([k,v],i)=>(
+<div key={i} style={{padding:“5px 0”,borderBottom:`1px solid ${C.border}`,color:C.muted}}><span style={{fontWeight:500,color:C.text}}>{k}:</span> {v||”—”}</div>
+))}
+</div>
+{(data.meds||[]).length>0&&<div style={{marginTop:10,fontSize:12}}><span style={{fontWeight:500,color:C.text}}>Medicamentos:</span> <span style={{color:C.muted}}>{(data.meds||[]).join(”; “)}{data.med_outros?”; “+data.med_outros:””}</span></div>}
+{data.obs&&<div style={{marginTop:8,fontSize:12}}><span style={{fontWeight:500,color:C.text}}>Obs.:</span> <span style={{color:C.muted}}>{data.obs}</span></div>}
+</div>
+<div style={{fontSize:11,color:”#aaa”,lineHeight:1.6,borderTop:`1px solid ${C.border}`,paddingTop:12,marginBottom:18}}>⚕️ Instrumento auxiliar de triagem. Não substitui a avaliação clínica presencial.</div>
+<div style={{display:“flex”,gap:10,justifyContent:“flex-end”,flexWrap:“wrap”}}>
+<Btn variant="secondary" onClick={onReset}>Novo Formulário</Btn>
+<Btn variant=“teal” onClick={()=>openPDF(data,sc)}>🖨️ Imprimir / Salvar PDF</Btn>
+</div>
+</div>
+
+  </div>;
+}
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+export default function App(){
+const [sec,setSec]=useState(1);
+const [stage,setStage]=useState(“form”);
+const [data,setData]=useState({…INIT});
+const set=(k,v)=>setData(d=>({…d,[k]:v}));
+const age=getAge(data.nascimento);
+const isIdoso=age!==null&&age>=65;
+const temIRC=data.comorbidades.includes(“irc”);
+const toggleMed=(item)=>{set(“meds_nenhum”,false);set(“meds”,data.meds.includes(item)?data.meds.filter(m=>m!==item):[…data.meds,item]);};
+const nav=(d)=>{setSec(s=>s+d);window.scrollTo({top:0,behavior:“smooth”});};
+const TOTAL=6;
+
+const handleConfirm=()=>{
+const scores=calcScores(data);
+const msg=buildWAMsg(data,scores);
+window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`,”_blank”);
+setStage(“sent”);
+};
+const handleOpenPDF=()=>{ openPDF(data,calcScores(data)); };
+const reset=()=>{setStage(“form”);setSec(1);setData({…INIT});};
+
+const Header=()=><>
+<div style={{background:C.navy,color:“white”,padding:“22px 22px 18px”}}>
+<div style={{maxWidth:720,margin:“0 auto”}}>
+<div style={{fontSize:11,letterSpacing:3,textTransform:“uppercase”,color:”#e8b96a”,marginBottom:6}}>Anestesia Ambulatorial</div>
+<div style={{fontFamily:“Georgia,serif”,fontSize:24,fontWeight:700,marginBottom:4}}>Avaliação Pré-Anestésica</div>
+<div style={{fontSize:13,color:“rgba(255,255,255,0.5)”}}>Preencha com atenção. Suas respostas são confidenciais.</div>
+</div>
+</div>
+{stage===“form”&&<div style={{background:C.navy,padding:“0 22px 14px”}}>
+<div style={{maxWidth:720,margin:“0 auto”}}>
+<div style={{display:“flex”,gap:4}}>{Array.from({length:TOTAL},(_,i)=><div key={i} style={{height:4,borderRadius:2,flex:i+1===sec?2:1,background:i+1<sec?C.tealL:i+1===sec?”#e8b96a”:“rgba(255,255,255,0.18)”,transition:“all 0.3s”}}/>)}</div>
+<div style={{fontSize:11,color:“rgba(255,255,255,0.4)”,marginTop:5,textAlign:“right”}}>Seção {sec} de {TOTAL}</div>
+</div>
+</div>}
+</>;
+
+const wrap=(content)=><div style={{background:C.cream,minHeight:“100vh”,fontFamily:“system-ui,sans-serif”}}><Header/><div style={{maxWidth:720,margin:“0 auto”,padding:“22px 14px 60px”}}>{content}</div></div>;
+
+if(stage===“sent”) return wrap(<PatientSent data={data} onOpenPDF={handleOpenPDF}/>);
+if(stage===“doctor”) return wrap(<DocResults data={data} onReset={reset}/>);
+if(stage===“review”) return wrap(<Review data={data} onBack={()=>setStage(“form”)} onConfirm={handleConfirm}/>);
+
+return wrap(<>
+{sec===1&&<Card icon="👤" title="Identificação" subtitle="Dados pessoais básicos">
+<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:14}}>
+<Field label="Nome completo"><TxtIn value={data.nome} onChange={v=>set(“nome”,v)} placeholder=“Seu nome completo”/></Field>
+<Field label="Data de nascimento"><TxtIn value={data.nascimento} onChange={v=>set(“nascimento”,maskDate(v))} placeholder=“DD/MM/AAAA”/></Field>
+<Field label="Peso (kg)"><TxtIn type=“number” value={data.peso} onChange={v=>set(“peso”,v)} placeholder=“Ex: 72”/></Field>
+</div>
+<Field label="Altura"><HeightSlider value={data.altura} onChange={v=>set(“altura”,v)}/></Field>
+<Field label="Procedimento previsto" hint="Se souber o nome, informe aqui"><TxtIn value={data.procedimento} onChange={v=>set(“procedimento”,v)} placeholder=“Ex: colonoscopia, curetagem…”/></Field>
+<Field label="Sexo biológico"><Radio inline options={[{value:“M”,label:“Masculino”},{value:“F”,label:“Feminino”}]} value={data.sexo} onChange={v=>set(“sexo”,v)}/></Field>
+<BtnRow><Btn onClick={()=>nav(1)}>Continuar →</Btn></BtnRow>
+</Card>}
+
+```
+{sec===2&&<Card icon="📋" title="Histórico de Saúde" subtitle="Condições médicas e antecedentes">
+  <Field label="Tem alergia a algum medicamento?"><Radio inline options={[{value:"sim",label:"Sim"},{value:"nao",label:"Não"}]} value={data.alergia} onChange={v=>set("alergia",v)}/></Field>
+  {data.alergia==="sim"&&<Field label="Qual medicamento?" hint="Descreva a alergia"><TxtIn value={data.alergia_qual} onChange={v=>set("alergia_qual",v)} placeholder="Ex: dipirona, penicilina..."/></Field>}
+  <Field label="Tem alergia a látex (borracha)?"><Radio inline options={[{value:"sim",label:"Sim"},{value:"nao",label:"Não"},{value:"nao_sei",label:"Não sei"}]} value={data.latex} onChange={v=>set("latex",v)}/></Field>
+  <Field label="Você tem alguma dessas condições? (pode marcar mais de uma)"><Checks options={COMORBIDADES} values={data.comorbidades} onChange={v=>set("comorbidades",v)}/></Field>
+  {temIRC&&<div style={{background:"#f0f4fa",border:"1.5px solid #a8c4e8",borderRadius:10,padding:"14px 16px",marginBottom:8}}>
+    <div style={{fontSize:12,color:"#1a4a7a",marginBottom:10}}>📋 Você marcou doença renal crônica. Seu último exame de creatinina estava:</div>
+    <Radio options={[{value:"normal",label:"Normal (até 1,2 mg/dL)"},{value:"alta",label:"Alterado (acima de 1,2 mg/dL)"},{value:"nao_sei",label:"Não sei / não tenho o resultado"}]} value={data.creatinina} onChange={v=>set("creatinina",v)}/>
+  </div>}
+  <Field label="Já teve algum problema com anestesia anteriormente?" hint="Pode marcar mais de um"><Checks options={PROB_ANEST} values={data.prob_anest} onChange={v=>set("prob_anest",v)}/></Field>
+  <BtnRow><Btn variant="secondary" onClick={()=>nav(-1)}>← Voltar</Btn><Btn onClick={()=>nav(1)}>Continuar →</Btn></BtnRow>
+</Card>}
+
+{sec===3&&<Card icon="🚶" title="Capacidade Física" subtitle="Como você se sente no dia a dia">
+  <Field label="Consegue subir um lance de escada ou caminhar 1-2 quarteirões sem sentir falta de ar ou dor no peito?"><Radio options={[{value:"sim",label:"Sim, sem dificuldade"},{value:"dif",label:"Com alguma dificuldade"},{value:"nao",label:"Não consigo"}]} value={data.mets} onChange={v=>set("mets",v)}/></Field>
+  <Field label="Como você descreveria sua saúde geral?"><Radio options={[{value:"muito_boa",label:"Muito boa — pratico atividades sem limitação"},{value:"boa",label:"Boa — faço minhas atividades normalmente"},{value:"regular",label:"Regular — tenho algumas limitações"},{value:"ruim",label:"Ruim — tenho muitas limitações no dia a dia"}]} value={data.saude_geral} onChange={v=>set("saude_geral",v)}/></Field>
+  <Field label="Costuma sentir enjoo em viagens de carro, barco ou avião?"><Radio inline options={[{value:"sim",label:"Sim"},{value:"nao",label:"Não"}]} value={data.cinetose} onChange={v=>set("cinetose",v)}/></Field>
+  <Field label="É fumante ou fumou nos últimos 2 anos?"><Radio options={[{value:"nao",label:"Não fumante"},{value:"sim",label:"Fumante / ex-fumante recente"}]} value={data.fumante} onChange={v=>set("fumante",v)}/></Field>
+  {isIdoso&&<><div style={{height:1,background:C.border,margin:"18px 0"}}/><Sub>Perguntas adicionais — pacientes acima de 65 anos</Sub>
+    <Field label="Nos últimos 12 meses, sentiu-se exausto ou sem energia com frequência?"><Radio inline options={[{value:"sim",label:"Sim"},{value:"nao",label:"Não"}]} value={data.exausto} onChange={v=>set("exausto",v)}/></Field>
+    <Field label="Perdeu peso sem querer nos últimos 12 meses? (mais de 4,5 kg)"><Radio inline options={[{value:"sim",label:"Sim"},{value:"nao",label:"Não"}]} value={data.emagrecimento} onChange={v=>set("emagrecimento",v)}/></Field>
+    <Field label="Tem dificuldade para andar rápido ou fazer atividades que antes fazia sem problema?"><Radio inline options={[{value:"sim",label:"Sim"},{value:"nao",label:"Não"}]} value={data.velocidade} onChange={v=>set("velocidade",v)}/></Field>
+    <Field label="Pratica atividade física regularmente?"><Radio inline options={[{value:"sim",label:"Sim"},{value:"nao",label:"Não"}]} value={data.atividade} onChange={v=>set("atividade",v)}/></Field>
+  </>}
+  <BtnRow><Btn variant="secondary" onClick={()=>nav(-1)}>← Voltar</Btn><Btn onClick={()=>nav(1)}>Continuar →</Btn></BtnRow>
+</Card>}
+
+{sec===4&&<Card icon="💊" title="Medicamentos em Uso" subtitle="Selecione todos os que usa regularmente">
+  <p style={{fontSize:13,color:C.muted,marginBottom:14,lineHeight:1.5}}>Toque em cada categoria para expandir. Foque nos remédios prescritos por médico.</p>
+  <button type="button" onClick={()=>{set("meds_nenhum",!data.meds_nenhum);if(!data.meds_nenhum)set("meds",[]);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 16px",borderRadius:10,marginBottom:12,cursor:"pointer",border:data.meds_nenhum?`2px solid ${C.teal}`:`1.5px solid ${C.border}`,background:data.meds_nenhum?"#e6f6f3":"white",fontFamily:"inherit",fontSize:14,fontWeight:data.meds_nenhum?600:400,color:data.meds_nenhum?C.teal:C.text}}>
+    <span style={{width:18,height:18,borderRadius:4,border:data.meds_nenhum?"none":"2px solid #ccc",background:data.meds_nenhum?C.teal:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{data.meds_nenhum&&<span style={{color:"white",fontSize:11,fontWeight:700}}>✓</span>}</span>
+    🚫 Não uso nenhum medicamento regularmente
+  </button>
+  {!data.meds_nenhum&&Object.entries(MEDS).map(([k,cat])=><MedCat key={k} catKey={k} cat={cat} selected={data.meds} onToggle={toggleMed}/>)}
+  {!data.meds_nenhum&&<Field label="Outro medicamento não listado?" hint="Escreva o nome aqui"><textarea value={data.med_outros} onChange={e=>set("med_outros",e.target.value)} rows={2} placeholder="Ex: rivastigmina, metotrexato..." style={{width:"100%",padding:"10px 13px",border:`1.5px solid ${C.border}`,borderRadius:8,fontFamily:"inherit",fontSize:14,resize:"vertical",boxSizing:"border-box"}}/></Field>}
+  <BtnRow><Btn variant="secondary" onClick={()=>nav(-1)}>← Voltar</Btn><Btn onClick={()=>nav(1)}>Continuar →</Btn></BtnRow>
+</Card>}
+
+{sec===5&&<Card icon="📝" title="Informações Complementares" subtitle="Quase lá!">
+  <Field label="Tem alguma condição ou queixa que não mencionamos e que acha importante informar?"><textarea value={data.obs} onChange={e=>set("obs",e.target.value)} rows={3} placeholder="Escreva aqui..." style={{width:"100%",padding:"10px 13px",border:`1.5px solid ${C.border}`,borderRadius:8,fontFamily:"inherit",fontSize:14,resize:"vertical",boxSizing:"border-box"}}/></Field>
+  <Field label="Data do procedimento previsto"><TxtIn value={data.data_procedimento} onChange={v=>set("data_procedimento",maskDate(v))} placeholder="DD/MM/AAAA"/></Field>
+  <BtnRow><Btn variant="secondary" onClick={()=>nav(-1)}>← Voltar</Btn><Btn onClick={()=>nav(1)}>Continuar →</Btn></BtnRow>
+</Card>}
+
+{sec===6&&<Card icon="🔍" title="Quase pronto!" subtitle="Revise suas respostas antes de enviar">
+  <div style={{background:"#f0f4fa",borderRadius:8,padding:"14px 16px",fontSize:13,color:"#1a4a7a",lineHeight:1.7,marginBottom:16}}>
+    Clique em <strong>Revisar respostas</strong> para conferir tudo antes de confirmar o envio.
+  </div>
+  <BtnRow><Btn variant="secondary" onClick={()=>nav(-1)}>← Voltar</Btn><Btn onClick={()=>{setStage("review");window.scrollTo({top:0,behavior:"smooth"});}}>Revisar respostas →</Btn></BtnRow>
+</Card>}
+```
+
+</>);
+}
+
+const root = ReactDOM.createRoot(document.getElementById(‘root’));
+root.render(React.createElement(App));
+</script>
+
+</body>
+</html>
