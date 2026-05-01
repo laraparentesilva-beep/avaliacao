@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Avaliação Pré-Anestésica</title>
+<title>Letheon Care — Avaliação Pré-Anestésica</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--navy:#0f2240;--teal:#1a7a6e;--tl:#22a898;--gold:#c9973a;--cream:#f8f4ee;--warm:#fdfbf8;--bd:#ddd8d0;--tx:#1c1c1c;--mu:#5a5a5a}
@@ -91,7 +91,7 @@ input[type=range]{width:100%;accent-color:var(--teal);cursor:pointer}
 </head>
 <body>
 <div class="hdr">
-  <div class="hdr-tag">Anestesia Ambulatorial</div>
+  <div class="hdr-tag">Letheon Care</div>
   <div class="hdr-t">Avaliação Pré-Anestésica</div>
   <div class="hdr-s">Preencha com atenção. Suas respostas são confidenciais.</div>
 </div>
@@ -159,7 +159,11 @@ input[type=range]{width:100%;accent-color:var(--teal);cursor:pointer}
         <button class="op" onclick="sC('comorbidades','dvp',this)"><span class="ob"><span class="ok">✓</span></span>Doença vascular periférica / problemas de circulação nas pernas</button>
         <button class="op" onclick="sC('comorbidades','irc',this);sI('crb',D.comorbidades.includes('irc'))"><span class="ob"><span class="ok">✓</span></span>Doença renal crônica</button>
         <button class="op" onclick="sC('comorbidades','pulm',this)"><span class="ob"><span class="ok">✓</span></span>Doença pulmonar (asma, enfisema, DPOC, apneia do sono)</button>
-        <button class="op" onclick="sX('comorbidades','nenhuma',this,true)"><span class="ob"><span class="ok">✓</span></span>Nenhuma das anteriores</button>
+        <button class="op" onclick="sC('comorbidades','outros_comorb',this);sI('outros-comorb-field',D.comorbidades.includes('outros_comorb'))"><span class="ob"><span class="ok">✓</span></span>Outras condições</button>
+        <button class="op" onclick="sX('comorbidades','nenhuma',this,true);sI('outros-comorb-field',false)"><span class="ob"><span class="ok">✓</span></span>Nenhuma das anteriores</button>
+      </div>
+      <div id="outros-comorb-field" style="display:none;margin-top:8px">
+        <input type="text" id="outros_comorb_txt" placeholder="Descreva a condição..." oninput="D.outros_comorb=this.value">
       </div>
     </div>
     <div id="crb" style="display:none;margin-bottom:10px">
@@ -290,7 +294,7 @@ input[type=range]{width:100%;accent-color:var(--teal);cursor:pointer}
 const WA="5571985110012";
 const T=6;
 let C=1;
-const D={nome:"",nascimento:"",peso:"",altura:1.50,procedimento:"",sexo:"",alergia:"",alergia_qual:"",latex:"",comorbidades:[],creatinina:"",prob_anest:[],mets:"",saude_geral:"",exausto:"",emagrecimento:"",velocidade:"",atividade:"",cinetose:"",fumante:"",meds_nenhum:false,meds:[],med_outros:"",obs:"",data_procedimento:""};
+const D={nome:"",nascimento:"",peso:"",altura:1.50,procedimento:"",sexo:"",alergia:"",alergia_qual:"",latex:"",comorbidades:[],creatinina:"",outros_comorb:"",prob_anest:[],mets:"",saude_geral:"",exausto:"",emagrecimento:"",velocidade:"",atividade:"",cinetose:"",fumante:"",meds_nenhum:false,meds:[],med_outros:"",obs:"",data_procedimento:""};
 
 const MD={
   antihipertensivos:{l:"💓 Anti-hipertensivos e antiarrítmicos",i:["Losartana (Cozaar, Aradois)","Valsartana (Diovan)","Enalapril (Renitec)","Ramipril (Triatec)","Lisinopril (Zestril)","Atenolol (Ablok)","Metoprolol (Seloken)","Carvedilol (Coreg)","Bisoprolol (Concor)","Anlodipino (Norvasc)","Nifedipina (Adalat)","Hidroclorotiazida (Clortiazida)","Furosemida (Lasix)","Espironolactona (Aldactone)","Digoxina (Digoxin)","Amiodarona (Ancoron)"]},
@@ -299,11 +303,12 @@ const MD={
   glp1:{l:"⚖️ Análogos de GLP-1",g:true,w:"Retardam esvaziamento gástrico — pode exigir jejum prolongado",i:["Semaglutida semanal (Ozempic, Wegovy)","Tirzepatida (Mounjaro, Zepbound)","Liraglutida diária (Victoza, Saxenda)","Dulaglutida (Trulicity)","Exenatida (Byetta, Bydureon)"]},
   colesterol:{l:"📊 Colesterol (estatinas e outros)",i:["Sinvastatina (Zocor)","Atorvastatina (Lipitor, Citalor)","Rosuvastatina (Crestor)","Pitavastatina (Livalo)","Ezetimiba (Zetia)","Fenofibrato (Lipanon)"]},
   pulm:{l:"🫁 Asma / DPOC",i:["Salbutamol (Aerolin, Ventolin)","Formoterol (Foradil)","Budesonida inalatória (Pulmicort)","Outros broncodilatadores"]},
-  outros:{l:"💊 Outros",i:["Antidepressivos e ansiolíticos","Lítio (Carbolitium)","Levotiroxina (Puran T4, Euthyrox)","Metimazol (Tapazol)","Prednisona / Outros corticoides orais","Implantes hormonais (gestrinona, testosterona, oxandrolona, etc.)"]},
+  outros:{l:"💊 Outros",i:["Antidepressivos e ansiolíticos","Lítio (Carbolitium)","Levotiroxina (Puran T4, Euthyrox)","Metimazol (Tapazol)","Prednisona / Outros corticoides orais"]},
+  implantes:{l:"💉 Implantes hormonais",i:["Implante hormonal subcutâneo (pellet)","Testosterona (injeção, gel ou adesivo)","Gestrinona","Oxandrolona (Anavar)","GH / Hormônio do crescimento"]},
   fito:{l:"🌿 Fitoterápicos e suplementos",i:["Ginkgo biloba","Ômega-3 (alta dose)","Valeriana","Erva de São João (Hypericum)","Alho em cápsula (alta dose)","Gengibre em cápsula"]}
 };
 
-const CL={has:"Hipertensão arterial",dm:"Diabetes mellitus",ic:"Insuficiência cardíaca",dac:"Doença coronariana / infarto prévio / angina",avc:"AVC / Ataque isquêmico transitório",fa:"Fibrilação atrial (FA)",arritmia:"Outras arritmias cardíacas",dvp:"Doença vascular periférica",irc:"Doença renal crônica",pulm:"Doença pulmonar",nenhuma:"Nenhuma das anteriores"};
+const CL={has:"Hipertensão arterial",dm:"Diabetes mellitus",ic:"Insuficiência cardíaca",dac:"Doença coronariana / infarto prévio / angina",avc:"AVC / Ataque isquêmico transitório",fa:"Fibrilação atrial (FA)",arritmia:"Outras arritmias cardíacas",dvp:"Doença vascular periférica",irc:"Doença renal crônica",pulm:"Doença pulmonar",outros_comorb:"Outras condições",nenhuma:"Nenhuma das anteriores"};
 const PL={nao:"Não",nunca:"Nunca fiz cirurgia",nvpo:"Náuseas e vômitos",intubacao:"Dificuldade de intubação",resp:"Problemas respiratórios",consciencia:"Consciência intraoperatória",hm:"Hipertermia Maligna",outros_anest:"Outros"};
 
 function bMeds(){
@@ -411,7 +416,8 @@ function uP(){
 
 function bRev(){
   const ag=gA(),bm=bmi();
-  const cL=(D.comorbidades||[]).filter(c=>c!=='nenhuma').map(c=>CL[c]).filter(Boolean);
+  const cL=(D.comorbidades||[]).filter(c=>c!=='nenhuma'&&c!=='outros_comorb').map(c=>CL[c]).filter(Boolean);
+  if(D.comorbidades.includes('outros_comorb')&&D.outros_comorb)cL.push(D.outros_comorb);
   const pL=(D.prob_anest||[]).map(p=>PL[p]).filter(Boolean);
   let h=`<div class="sh" style="margin-top:6px">Identificação</div>`;
   h+=ri('Nome',D.nome);h+=ri('Nascimento',D.nascimento+(ag?` (${ag} anos)`:''));h+=ri('Sexo',D.sexo==='M'?'Masculino':D.sexo==='F'?'Feminino':'—');
@@ -450,7 +456,7 @@ function cSc(){
   const nD=meds.filter(m=>MD.diabetes.i.includes(m)).length;
   const tG=meds.some(m=>MD.glp1.i.includes(m));
   const tA=meds.some(m=>MD.anticoag.i.includes(m));
-  const tI=meds.includes('Implantes hormonais (gestrinona, testosterona, oxandrolona, etc.)');
+  const tI=meds.some(m=>MD.implantes.i.includes(m));
   let nv='verde';const mt=[];
   const aR=t=>{nv='vermelho';mt.push({c:'r',t});};
   const aA=t=>{if(nv==='verde')nv='amarelo';mt.push({c:'a',t});};
@@ -472,12 +478,13 @@ function cSc(){
 
 function bWA(sc){
   const{ap,rc,fr,ch,nv,mt,ag}=sc,bm=bmi();
-  const cL=(D.comorbidades||[]).filter(c=>c!=='nenhuma').map(c=>CL[c]).filter(Boolean);
+  const cL=(D.comorbidades||[]).filter(c=>c!=='nenhuma'&&c!=='outros_comorb').map(c=>CL[c]).filter(Boolean);
+  if(D.comorbidades.includes('outros_comorb')&&D.outros_comorb)cL.push(D.outros_comorb);
   const pL=(D.prob_anest||[]).map(p=>PL[p]).filter(Boolean);
   const nT=nv==='verde'?'VERDE - Avaliacao no dia':nv==='amarelo'?'AMARELO - Recomenda-se contato previo':'VERMELHO - Consulta presencial recomendada';
   const S='--------------------';
   const L=[
-    '*AVALIACAO PRE-ANESTESICA*',
+    '*LETHEON CARE — AVALIACAO PRE-ANESTESICA*',
     `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`,
     S,`*TRIAGEM: ${nT}*`,S,
     '*IDENTIFICACAO*',
@@ -529,7 +536,8 @@ function abrirPDF(){gPDF(cSc());}
 
 function gPDF(sc){
   const{ap,rc,fr,ch,nv,mt,ag}=sc,bm=bmi(),hoje=new Date().toLocaleDateString('pt-BR');
-  const cL=(D.comorbidades||[]).filter(c=>c!=='nenhuma').map(c=>CL[c]).filter(Boolean);
+  const cL=(D.comorbidades||[]).filter(c=>c!=='nenhuma'&&c!=='outros_comorb').map(c=>CL[c]).filter(Boolean);
+  if(D.comorbidades.includes('outros_comorb')&&D.outros_comorb)cL.push(D.outros_comorb);
   const pL=(D.prob_anest||[]).map(p=>PL[p]).filter(Boolean);
   const tc={verde:{i:'✅',t:'Avaliação no dia do procedimento',s:'Perfil de baixo risco. Encaminhar orientações de jejum, exames pré-operatórios e termo de consentimento.',bg:'#e6f8f0',bd:'#a8dfc5',c:'#1e8a5e'},amarelo:{i:'⚠️',t:'Recomenda-se contato prévio',s:'Pontos de atenção identificados. Sugere-se teleconsulta ou contato telefônico para orientações individualizadas.',bg:'#fef8ec',bd:'#f0d080',c:'#9a6a00'},vermelho:{i:'🔴',t:'Consulta presencial recomendada',s:'Fatores de risco significativos. Avaliação presencial antes do procedimento é fortemente recomendada.',bg:'#fdecea',bd:'#f0b0aa',c:'#c0392b'}}[nv];
   const aC=ap<=1?'#1e8a5e':ap===2?'#e67e22':'#c0392b';
@@ -540,12 +548,12 @@ function gPDF(sc){
   const aH=mt.length?mt.map(m=>`<div style="display:flex;gap:9px;align-items:flex-start;padding:8px 12px;border-radius:8px;margin-bottom:5px;font-size:13px;background:${m.c==='r'?'#fdecea':'#fef8ec'};border:1px solid ${m.c==='r'?'#f0b0aa':'#f0d080'};color:${m.c==='r'?'#8a1a14':'#7a5500'}"><span>${m.c==='r'?'🔴':'⚠️'}</span><span>${m.t}</span></div>`).join(''):`<div style="display:flex;gap:9px;align-items:flex-start;padding:8px 12px;border-radius:8px;font-size:13px;background:#e8f4fd;border:1px solid #a8cef0;color:#1a4a7a"><span>✅</span><span>Nenhum fator de risco significativo identificado.</span></div>`;
   function sc2(tt,sb,v,mx,cl,lb,dc,nt){return`<div style="border:1.5px solid #ddd8d0;border-radius:10px;overflow:hidden;background:white"><div style="background:#0f2240;color:white;padding:8px 12px"><div style="font-size:11px;font-weight:600;letter-spacing:.3px">${tt}</div><div style="font-size:10px;opacity:.6;margin-top:1px">${sb}</div></div><div style="padding:12px"><div style="font-family:Georgia,serif;font-size:30px;font-weight:700;color:#0f2240;line-height:1">${v}${typeof v==='number'?`<span style="font-size:12px;color:#aaa">/${mx}</span>`:''}</div><div style="font-size:13px;font-weight:600;color:${cl};margin:3px 0">${lb}</div><div style="font-size:12px;color:#5a5a5a;line-height:1.4">${dc}</div>${nt?`<div style="font-size:11px;color:#0f2240;background:#f0f4fa;border-radius:6px;padding:5px 7px;margin-top:7px;line-height:1.7;white-space:pre-line">${nt}</div>`:''}</div></div>`;}
   function rw(k,v){if(!v||v==='—')return'';return`<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #ddd8d0;font-size:13px"><span style="color:#5a5a5a;min-width:125px;flex-shrink:0">${k}</span><span style="color:#1c1c1c;font-weight:500">${v}</span></div>`;}
-  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pré-Anestésica — ${D.nome||'Paciente'}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:#f8f4ee;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pg{max-width:760px;margin:0 auto;padding:22px 16px 36px}.pb{page-break-before:always;padding-top:22px}.pbtn{display:block;width:100%;max-width:320px;margin:0 auto 14px;background:#1a7a6e;color:white;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center}.phi{text-align:center;font-size:12px;color:#5a5a5a;margin-bottom:22px}.sg{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:16px}@media print{.pbtn,.phi{display:none!important}body{background:white}.pg{padding:10px}}</style></head>
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Letheon Care — Pré-Anestésica — ${D.nome||'Paciente'}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:#f8f4ee;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pg{max-width:760px;margin:0 auto;padding:22px 16px 36px}.pb{page-break-before:always;padding-top:22px}.pbtn{display:block;width:100%;max-width:320px;margin:0 auto 14px;background:#1a7a6e;color:white;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center}.phi{text-align:center;font-size:12px;color:#5a5a5a;margin-bottom:22px}.sg{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:16px}@media print{.pbtn,.phi{display:none!important}body{background:white}.pg{padding:10px}}</style></head>
 
 <body><div class="pg">
 <button class="pbtn" onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button>
 <p class="phi">Após salvar, envie o arquivo pelo WhatsApp para a clínica</p>
-<div style="background:#0f2240;color:white;border-radius:12px;padding:20px 20px 16px;margin-bottom:16px"><div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#e8b96a;margin-bottom:5px">Anestesia Ambulatorial</div><div style="font-family:Georgia,serif;font-size:21px;font-weight:700;margin-bottom:2px">Avaliação Pré-Anestésica</div><div style="font-size:12px;color:rgba(255,255,255,.5)">Resumo das respostas · ${hoje}</div></div>
+<div style="background:#0f2240;color:white;border-radius:12px;padding:20px 20px 16px;margin-bottom:16px"><div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#e8b96a;margin-bottom:5px">Letheon Care</div><div style="font-family:Georgia,serif;font-size:21px;font-weight:700;margin-bottom:2px">Avaliação Pré-Anestésica</div><div style="font-size:12px;color:rgba(255,255,255,.5)">Resumo das respostas · ${hoje}</div></div>
 <div style="display:flex;align-items:flex-start;gap:13px;padding:13px 16px;border-radius:10px;border:1.5px solid ${tc.bd};background:${tc.bg};margin-bottom:16px"><span style="font-size:22px">${tc.i}</span><div><div style="font-size:15px;font-weight:700;color:${tc.c}">${tc.t}</div><div style="font-size:12px;color:${tc.c};opacity:.85;margin-top:2px;line-height:1.5">${tc.s}</div></div></div>
 <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0f2240;margin:14px 0 7px;padding-left:9px;border-left:3px solid #c9973a">Identificação</div>
 ${rw('Nome',D.nome)}${rw('Nascimento',D.nascimento+(ag?` (${ag} anos)`:''))}${rw('Sexo',D.sexo==='M'?'Masculino':D.sexo==='F'?'Feminino':'—')}${rw('Peso / Altura',(D.peso||'—')+' kg / '+D.altura.toFixed(2)+' m'+(bm?` — IMC ${bm}`:''))}${rw('Procedimento',D.procedimento||'não informado')}${D.data_procedimento?rw('Data prevista',D.data_procedimento):''}
@@ -558,7 +566,7 @@ ${rw('METs',D.mets==='sim'?'≥ 4 METs':D.mets==='dif'?'Limitação moderada':D.
 ${D.obs?`<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0f2240;margin:14px 0 7px;padding-left:9px;border-left:3px solid #c9973a">Observações</div><div style="font-size:13px;line-height:1.6;padding:5px 0">${D.obs}</div>`:''}
 <div style="font-size:10px;color:#aaa;margin-top:18px;padding-top:10px;border-top:1px solid #ddd8d0;line-height:1.6">⚕️ Instrumento auxiliar de triagem. Não substitui avaliação clínica presencial. Gerado em ${hoje}.</div>
 <div class="pb">
-<div style="background:#0f2240;color:white;border-radius:12px 12px 0 0;padding:16px 20px"><div style="font-family:Georgia,serif;font-size:19px;font-weight:700">Triagem Pré-Anestésica — Escores Clínicos</div><div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:2px">${D.nome||'Paciente'}${D.data_procedimento?' · '+D.data_procedimento:''} · ${hoje}</div></div>
+<div style="background:#0f2240;color:white;border-radius:12px 12px 0 0;padding:16px 20px"><div style="font-family:Georgia,serif;font-size:19px;font-weight:700">Letheon Care — Escores Clínicos</div><div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:2px">${D.nome||'Paciente'}${D.data_procedimento?' · '+D.data_procedimento:''} · ${hoje}</div></div>
 <div style="background:#fdfbf8;border:1px solid #ddd8d0;border-top:none;border-radius:0 0 12px 12px;padding:18px">
 <div style="display:flex;align-items:flex-start;gap:11px;padding:12px 15px;border-radius:10px;border:1.5px solid ${tc.bd};background:${tc.bg};margin-bottom:16px"><span style="font-size:21px">${tc.i}</span><div><div style="font-size:14px;font-weight:700;color:${tc.c}">${tc.t}</div><div style="font-size:12px;color:${tc.c};opacity:.85;margin-top:2px;line-height:1.5">${tc.s}</div></div></div>
 <div style="background:#f0f4fa;border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:13px;line-height:1.8"><strong style="color:#0f2240">${D.nome||'—'}</strong>${ag?` · ${ag} anos`:''}${D.sexo?` · ${D.sexo==='M'?'Masculino':'Feminino'}`:''}${bm?` · IMC: ${bm}`:''}${D.procedimento?` · <em>${D.procedimento}</em>`:''}${cL.length?`<br><span style="color:#5a5a5a">Comorbidades: ${cL.join(', ')}</span>`:''}${D.alergia==='sim'?`<br><span style="color:#c0392b">Alergia: ${D.alergia_qual||'não especificada'}</span>`:''}${D.latex==='sim'?`<br><span style="color:#c0392b">Alergia a látex</span>`:''}</div>
